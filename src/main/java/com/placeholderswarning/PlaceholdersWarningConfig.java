@@ -38,4 +38,15 @@ public interface PlaceholdersWarningConfig extends Config
 	{
 		return Notification.ON;
 	}
+
+	@ConfigItem(
+			keyName = "bankclose",
+			name = "Prevent Bank Close",
+			description = "Prevents you from closing your bank interface until \"Always Set Placeholders\" is turned back on",
+			position = 4
+	)
+	default boolean bankClose()
+	{
+		return true;
+	}
 }

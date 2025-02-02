@@ -51,6 +51,7 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
                     Objects.requireNonNull(client.getWidget(12, 39)).setHidden(false);
             });
         }
+
         if (configChanged.getKey().equals("bankclose")) {
             clientThread.invokeLater(() -> {
                 Widget parent = client.getWidget(12, 2);
@@ -68,7 +69,6 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
     public void onGameTick(GameTick gameTick) {
         handleBlink();
         handleHideExitBank();
-
     }
 
     private void handleHideExitBank() {
@@ -110,7 +110,6 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {
-
     }
 
     @Override
@@ -122,7 +121,6 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-
     }
 
     @Override

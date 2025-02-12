@@ -129,7 +129,7 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
         if (isAlwaysSetPlaceHoldersOn()) {
             restoreMiniMapAndClickThrough();
             return;
-        };
+        }
 
         if (config.notification().isEnabled())
             notifier.notify(config.notification(), "Always Set Placeholders is turned off!");
@@ -146,9 +146,8 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
         assert bankWidget != null;
         bankWidget.setNoClickThrough(true);
         assert miniMapWidget != null;
-        clientThread.invokeLater(() -> {
-            miniMapWidget.setHidden(true);
-        });
+            clientThread.invokeLater(() ->
+            miniMapWidget.setHidden(true));
     }
 
     private void restoreMiniMapAndClickThrough() {
@@ -157,9 +156,9 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
         assert bankWidget != null;
         bankWidget.setNoClickThrough(false);
         assert miniMapWidget != null;
-        clientThread.invokeLater(() -> {
-            miniMapWidget.setHidden(false);
-        });
+        clientThread.invokeLater(() ->
+            miniMapWidget.setHidden(false)
+        );
     }
 
     @Subscribe
@@ -199,14 +198,14 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
             e.consume();
 
             if (config.chatmessage()) {
-                clientThread.invokeLater(() -> {
-                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: You cannot use escape to exit the bank!</col>", null);
-                });
+                clientThread.invokeLater(() ->
+                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: You cannot use escape to exit the bank!</col>", null)
+            );
 
                 if(config.bankCloseMinimap()){
-                    clientThread.invokeLater(() -> {
-                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: Minimap is disabled in plugin config!</col>", null);
-                    });
+                    clientThread.invokeLater(() ->
+                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: Minimap is disabled in plugin config!</col>", null)
+                    );
                 }
             }
         }

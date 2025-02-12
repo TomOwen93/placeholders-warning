@@ -4,8 +4,9 @@ import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.events.*;
+import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.Notifier;
@@ -40,67 +41,143 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
     @Inject
     KeyManager keyManager;
 
+    private static final String CLOSE = "Close";
+    private static final String TOGGLE_PLACEHOLDERS = "Always set placeholders";
+    private boolean forceRightClickFlag;
+
     @Subscribe
     public void onConfigChanged(ConfigChanged configChanged) {
         if (!configChanged.getGroup().equals("placeholderswarning")) return;
 
         if (configChanged.getKey().equals("blink")) {
-            Widget button = client.getWidget(12, 40);
+            Widget setPlaceHoldersButton = client.getWidget(12, 40);
             clientThread.invokeLater(() -> {
-                if (button != null && !button.isHidden())
+                if (setPlaceHoldersButton != null && !setPlaceHoldersButton.isHidden())
                     Objects.requireNonNull(client.getWidget(12, 39)).setHidden(false);
             });
         }
 
-        if (configChanged.getKey().equals("bankclose")) {
-            clientThread.invokeLater(() -> {
-                Widget parent = client.getWidget(12, 2);
-                if (parent != null) {
-                    Widget button = parent.getChild(11);
-                    if (button != null) {
-                        button.setHidden(false);
+        if (configChanged.getKey().equals("bankclosemap")) {
+            if (Objects.equals(configChanged.getNewValue(), "false")) {
+                restoreMiniMapAndClickThrough();
+            } else {
+                clientThread.invokeLater(() -> {
+                    if (isAlwaysSetPlaceHoldersOn()) {
+                        restoreMiniMapAndClickThrough();
+                    } else {
+                        hideMiniMapAndClickThrough();
                     }
+                });
+            }
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick gameTick) {
+        if (!config.blink()) return;
+        Widget setPlaceHoldersButton = client.getWidget(12, 40);
+        if (setPlaceHoldersButton == null || setPlaceHoldersButton.isHidden()) return;
+
+        Widget icon = client.getWidget(12, 41);
+        assert icon != null;
+        if (setPlaceHoldersButton.getSpriteId() != 170) icon.setHidden(false);
+        else icon.setHidden(!icon.isHidden());
+    }
+
+    @Subscribe
+    void onMenuShouldLeftClick(MenuShouldLeftClick event) {
+        if (!forceRightClickFlag || isAlwaysSetPlaceHoldersOn()) {
+            return;
+        }
+
+        forceRightClickFlag = false;
+        MenuEntry[] menuEntries = client.getMenu().getMenuEntries();
+
+        for (MenuEntry entry : menuEntries) {
+            if (entry.getOption().equals(CLOSE) && config.bankCloseExit()) {
+                event.setForceRightClick(true);
+                return;
+            }
+        }
+    }
+
+    @Subscribe
+    public void onMenuOptionClicked(MenuOptionClicked event) {
+        if (!config.bankCloseMinimap()) return;
+
+        if (event.getMenuTarget().contains(TOGGLE_PLACEHOLDERS)) {
+            clientThread.invokeLater(() -> {
+                if (isAlwaysSetPlaceHoldersOn()) {
+                    restoreMiniMapAndClickThrough();
+                } else {
+                    hideMiniMapAndClickThrough();
                 }
             });
         }
     }
 
     @Subscribe
-    public void onGameTick(GameTick gameTick) {
-        handleBlink();
-        handleHideExitBank();
-    }
-
-    private void handleHideExitBank() {
-        if (!config.bankClose()) return;
-        Widget exitBankButton = Objects.requireNonNull(client.getWidget(12, 2)).getChild(11);
-        if (Objects.requireNonNull(client.getWidget(12, 40)).getSpriteId() != 170) {
-            assert exitBankButton != null;
-            exitBankButton.setHidden(false);
-        } else {
-            assert exitBankButton != null;
-            exitBankButton.setHidden(true);
+    public void onMenuEntryAdded(MenuEntryAdded event) {
+        if ((event.getOption().equals(CLOSE) && config.bankCloseExit())) {
+            forceRightClickFlag = true;
         }
-    }
-
-    private void handleBlink() {
-        if (!config.blink()) return;
-        Widget button = client.getWidget(12, 40);
-        if (button == null || button.isHidden()) return;
-        Widget icon = client.getWidget(12, 41);
-        assert icon != null;
-        if (button.getSpriteId() != 170) icon.setHidden(false);
-        else icon.setHidden(!icon.isHidden());
     }
 
     @Subscribe
     public void onWidgetLoaded(WidgetLoaded widgetLoaded) {
         if (widgetLoaded.getGroupId() != InterfaceID.BANK) return;
-        if (Objects.requireNonNull(client.getWidget(12, 40)).getSpriteId() != 170) return;
+        if (isAlwaysSetPlaceHoldersOn()) {
+            restoreMiniMapAndClickThrough();
+            return;
+        };
+
         if (config.notification().isEnabled())
             notifier.notify(config.notification(), "Always Set Placeholders is turned off!");
         if (config.chatmessage())
             client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Always Set Placeholders is turned off!</col>", null);
+        if (config.bankCloseMinimap()) {
+            hideMiniMapAndClickThrough();
+        }
+    }
+
+    private void hideMiniMapAndClickThrough() {
+        Widget bankWidget = client.getWidget(10551310);
+        Widget miniMapWidget = client.getWidget(10551391);
+        assert bankWidget != null;
+        bankWidget.setNoClickThrough(true);
+        assert miniMapWidget != null;
+        clientThread.invokeLater(() -> {
+            miniMapWidget.setHidden(true);
+        });
+    }
+
+    private void restoreMiniMapAndClickThrough() {
+        Widget bankWidget = client.getWidget(10551310);
+        Widget miniMapWidget = client.getWidget(10551391);
+        assert bankWidget != null;
+        bankWidget.setNoClickThrough(false);
+        assert miniMapWidget != null;
+        clientThread.invokeLater(() -> {
+            miniMapWidget.setHidden(false);
+        });
+    }
+
+    @Subscribe
+    public void onWidgetClosed(WidgetClosed widgetClosed) {
+        if (widgetClosed.getGroupId() != InterfaceID.BANK) return;
+        restoreMiniMapAndClickThrough();
+    }
+
+    private boolean isAlwaysSetPlaceHoldersOn() {
+        if (isBankClosed()) {
+            return true;
+        }
+
+        Widget setPlaceHoldersButton = client.getWidget(12, 40);
+        if (setPlaceHoldersButton == null) {
+            return false;
+        }
+        return setPlaceHoldersButton.getSpriteId() != 170;
     }
 
     @Provides
@@ -114,9 +191,29 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if (config.bankClose() && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-            e.consume();
+        if (!config.bankCloseEsc()) {
+            return;
         }
+
+        if (!isAlwaysSetPlaceHoldersOn() && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+            e.consume();
+
+            if (config.chatmessage()) {
+                clientThread.invokeLater(() -> {
+                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: You cannot use escape to exit the bank!</col>", null);
+                });
+
+                if(config.bankCloseMinimap()){
+                    clientThread.invokeLater(() -> {
+                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>Placeholders Warning: Minimap is disabled in plugin config!</col>", null);
+                    });
+                }
+            }
+        }
+    }
+
+    private boolean isBankClosed() {
+        return client.getWidget(ComponentID.BANK_CONTAINER) == null;
     }
 
     @Override

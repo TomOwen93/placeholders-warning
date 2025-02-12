@@ -1,9 +1,6 @@
 package com.placeholderswarning;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.Notification;
+import net.runelite.client.config.*;
 
 @ConfigGroup("placeholderswarning")
 public interface PlaceholdersWarningConfig extends Config
@@ -39,14 +36,45 @@ public interface PlaceholdersWarningConfig extends Config
 		return Notification.ON;
 	}
 
-	@ConfigItem(
-			keyName = "bankclose",
-			name = "Prevent Bank Close",
-			description = "Prevents you from closing your bank interface until \"Always Set Placeholders\" is turned back on",
+	@ConfigSection(
+			name = "Prevent Bank Close Options",
+			description = "Options for preventing you from closing your bank until \"Always Set Placeholders\" is turned back on",
 			position = 4
 	)
-	default boolean bankClose()
+	String bankClose = "bankClose";
+
+	@ConfigItem(
+			keyName = "bankcloseesc",
+			name = "Esc Key",
+			section = bankClose,
+			description = "Prevents you from closing your bank interface with esc key (if set)",
+			position = 0
+	)
+	default boolean bankCloseEsc()
 	{
-		return true;
+		return false;
+	}
+	@ConfigItem(
+			keyName = "bankclosemap",
+			name = "Minimap",
+			section = bankClose,
+			description = "Prevents you from closing your bank interface with your minimap",
+			position = 1
+	)
+	default boolean bankCloseMinimap()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "bankcloseexit",
+			name = "Bank Exit Button",
+			section = bankClose,
+			description = "Prevents you from closing the exit button (removes left click)",
+			position = 2
+	)
+	default boolean bankCloseExit()
+	{
+		return false;
 	}
 }

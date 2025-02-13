@@ -45,6 +45,13 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
     private static final String TOGGLE_PLACEHOLDERS = "Always set placeholders";
     private boolean forceRightClickFlag;
 
+    @Override
+    protected void shutDown() {
+        keyManager.unregisterKeyListener(this);
+        clientThread.invokeLater(this::restoreMiniMapAndClickThrough);
+        forceRightClickFlag = false;
+    }
+
     @Subscribe
     public void onConfigChanged(ConfigChanged configChanged) {
         if (!configChanged.getGroup().equals("placeholderswarning")) return;
@@ -220,12 +227,7 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
     }
 
     @Override
-    protected void startUp() throws Exception {
+    protected void startUp() {
         keyManager.registerKeyListener(this);
-    }
-
-    @Override
-    protected void shutDown() throws Exception {
-        keyManager.unregisterKeyListener(this);
     }
 }

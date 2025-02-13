@@ -52,6 +52,18 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
         forceRightClickFlag = false;
     }
 
+    @Override
+    protected void startUp() {
+        keyManager.registerKeyListener(this);
+        clientThread.invokeLater(() -> {
+            if (isAlwaysSetPlaceHoldersOn()) {
+                restoreMiniMapAndClickThrough();
+            } else {
+                hideMiniMapAndClickThrough();
+            }
+        });
+    }
+
     @Subscribe
     public void onConfigChanged(ConfigChanged configChanged) {
         if (!configChanged.getGroup().equals("placeholderswarning")) return;
@@ -224,10 +236,5 @@ public class PlaceholdersWarningPlugin extends Plugin implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-    }
-
-    @Override
-    protected void startUp() {
-        keyManager.registerKeyListener(this);
     }
 }
